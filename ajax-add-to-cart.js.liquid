@@ -1,0 +1,94 @@
+(function($) {
+
+// jQuery on an empty object, we are going to use this as our Queue
+var ajaxQueue = $({});
+
+$.ajaxQueue = function( ajaxOpts ) {
+    var jqXHR,
+        dfd = $.Deferred(),
+        promise = dfd.promise();
+
+    // run the actual query
+    function doRequest( next ) {
+        jqXHR = $.ajax( ajaxOpts );
+        jqXHR.done( dfd.resolve )
+            .fail( dfd.reject )
+            .then( next, next );
+    }
+
+    // queue our ajax request
+    ajaxQueue.queue( doRequest );
+
+    // add the abort method
+    promise.abort = function( statusText ) {
+
+        // proxy abort to the jqXHR if it is active
+        if ( jqXHR ) {
+            return jqXHR.abort( statusText );
+        }
+
+        // if there wasn't already a jqXHR we need to remove from queue
+        var queue = ajaxQueue.queue(),
+            index = $.inArray( doRequest, queue );
+
+        if ( index > -1 ) {
+            queue.splice( index, 1 );
+        }
+
+        // and then reject the deferred
+        dfd.rejectWith( ajaxOpts.context || ajaxOpts, [ promise, statusText, "" ] );
+        return promise;
+    };
+
+    return promise;
+};
+
+})(jQuery);
+ 
+ 
+
+  $('#AddToCart').submit(function(e){
+   e.preventDefault()
+    
+   var total = $('.variant').length, i = 1 
+ 
+   //console.log(total)
+ 
+   $('.variant').each(function(index) {
+     
+     //$(this).next().css('opacity','.2')
+
+     $.ajaxQueue({
+       url: "/cart/add.js",
+       data: {
+         quantity: 1,
+         id: $(this).val(),
+         properties: {
+           'Bundled': 'yes',
+           'Parent': $(this).data('parent')
+         }
+       },
+       type: "POST",
+       dataType: "json",
+       success: function(data) {
+            //console.log($(this))
+       }
+     }).done(function(data,response){
+     	   // document.location.href = '/cart';
+       
+       
+       
+       if (i == total){ 
+         document.location.href = '/cart';
+       }
+       	$('.product-card.loop-'+i).css('opacity','.2')
+       
+        // console.log(i)
+         i++;
+     }) 
+         
+   });
+	//console.log(queue)
+    
+    
+  })
